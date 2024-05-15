@@ -19,6 +19,18 @@ const RegisterPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!formData.username || !formData.email || !formData.password) {
+      setErrorMessage('Por favor, completa todos los campos.');
+      setSuccessMessageVisible(false);
+      return;
+    }
+
+    if (!validateEmail(formData.email)) {
+      setErrorMessage('Por favor, ingresa un correo electrónico válido.');
+      setSuccessMessageVisible(false);
+      return;
+    }
+
     try {
       const response = await axios.post('http://localhost:8000/api/register', formData);
       console.log(response.data);
@@ -41,6 +53,12 @@ const RegisterPage = () => {
 
   const handleCloseErrorMessage = () => {
     setErrorMessage('');
+  };
+
+  const validateEmail = (email) => {
+    // Expresión regular para validar el formato de un correo electrónico
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
   };
 
   return (

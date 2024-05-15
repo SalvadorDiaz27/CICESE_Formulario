@@ -19,8 +19,17 @@ function RegistroForm() {
 
   async function handleSubmit(event) {
     event.preventDefault();
-    console.warn(nombre, cvu, instituto, pais, telefono, correo, tipoEstancia, responsable, proyecto, justificacion, fecha_inicio, fecha_fin, curp, solicitud);
-    
+    if (!nombre || !cvu || !instituto || !pais || !telefono || !correo || !tipoEstancia || !responsable || !proyecto || !justificacion || !fecha_inicio || !fecha_fin || !curp) {
+      setMensaje('Por favor, completa todos los campos.');
+      return;
+    }
+
+    // Validación del CURP
+    if (curp.length !== 18) {
+      setMensaje('El CURP debe tener 18 caracteres.');
+      return;
+    }
+
     try {
       const response = await fetch("http://localhost:8000/api/addregistro", {
         method: 'POST',

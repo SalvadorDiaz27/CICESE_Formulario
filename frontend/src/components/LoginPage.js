@@ -18,6 +18,11 @@ const LoginPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!formData.email || !formData.password) {
+      setErrorMessage('Por favor, completa todos los campos.');
+      return;
+    }
+
     try {
       await axios.get('http://localhost:8000/sanctum/csrf-cookie');
       const response = await axios.post('http://localhost:8000/api/login', formData, {
