@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { useAuth } from '../AuthContext';
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
@@ -11,6 +12,8 @@ const LoginPage = () => {
 
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -18,8 +21,26 @@ const LoginPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (!formData.email || !formData.password) {
       setErrorMessage('Por favor, completa todos los campos.');
+      return;
+    }
+
+    const emailRegex = /^\S+@\S+\.\S+$/;
+    if (!emailRegex.test(formData.email)) {
+      setErrorMessage('Ingresa un correo electrónico válido.');
+      return;
+    }
+
+    const specialCharRegex = /[!#$%^&*(),?":{}|<>]/;
+    if (specialCharRegex.test(formData.email)) {
+      setErrorMessage('El correo electrónico no debe contener caracteres especiales.');
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      setErrorMessage('La contraseña debe tener al menos 6 caracteres.');
       return;
     }
 
@@ -28,39 +49,41 @@ const LoginPage = () => {
       const response = await axios.post('http://localhost:8000/api/login', formData, {
         withCredentials: false
       });
-  
+
       const { role, token } = response.data;
-      console.log('Role:', role);
-      console.log('Token:', token);
-  
+
       if (token) {
-        localStorage.setItem('token', token);
-        console.log('Token guardado en el almacenamiento local');
-  
+        login(token, role);
+
         if (role === 1) {
-          console.log('Redirigiendo a /admin/dashboard');
-          window.location.href = '/admin/dashboard';
+          navigate('/admin/dashboard');
         } else if (role === 2) {
-          console.log('Redirigiendo a /investigador/dashboard');
-          window.location.href = '/investigador/dashboard';
+          navigate('/investigador/dashboard');
         } else if (role === 3) {
-          console.log('Redirigiendo a /tecnico/dashboard');
-          window.location.href = '/tecnico/dashboard';
+          navigate('/tecnico/dashboard');
         } else if (role === 4) {
-          console.log('Redirigiendo a /administrativo/dashboard');
-          window.location.href = '/administrativo/dashboard';
+          navigate('/administrativo/dashboard');
         }
       }
-  
+
       setSuccessMessage(`Inicio de sesión exitoso. Rol: ${role}`);
-  
     } catch (error) {
       console.error('Error:', error);
-      if (error.response && error.response.status === 401) {
-        setErrorMessage('Credenciales inválidas. Por favor, inténtalo de nuevo.');
+      handleError(error);
+    }
+  };
+
+  const handleError = (error) => {
+    if (error.response) {
+      if (error.response.status === 401) {
+        setErrorMessage('Credenciales inválidas o el usuario no existe. Por favor, inténtalo de nuevo.');
       } else {
         setErrorMessage('Error al iniciar sesión. Por favor, inténtalo de nuevo.');
       }
+    } else if (error.request) {
+      setErrorMessage('No se pudo conectar con la base de datos. Por favor, inténtalo de nuevo más tarde.');
+    } else {
+      setErrorMessage('Error al iniciar sesión. Por favor, inténtalo de nuevo.');
     }
   };
 
@@ -72,7 +95,7 @@ const LoginPage = () => {
     <div className="container mt-5">
       <div className="row">
         <div className="col-md-6 offset-md-3">
-          <div className="card">  
+          <div className="card">
             <div className="card-header">
               <h3 className="mb-0">Inicio de Sesión</h3>
             </div>
@@ -92,11 +115,25 @@ const LoginPage = () => {
                 )}
                 <div className="mb-3">
                   <label htmlFor="email" className="form-label">Correo Electrónico</label>
-                  <input type="email" className="form-control" id="email" name="email" value={formData.email} onChange={handleChange} />
+                  <input
+                    type="email"
+                    className="form-control"
+                    id="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                  />
                 </div>
                 <div className="mb-3">
                   <label htmlFor="password" className="form-label">Contraseña</label>
-                  <input type="password" className="form-control" id="password" name="password" value={formData.password} onChange={handleChange} />
+                  <input
+                    type="password"
+                    className="form-control"
+                    id="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                  />
                 </div>
                 <button type="submit" className="btn btn-primary">Iniciar Sesión</button>
               </form>
